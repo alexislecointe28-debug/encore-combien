@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encore combien de fois ?</title>
+<meta name="description" content="Combien de dîners, de visites, d'étés te reste-t-il avec ceux que tu aimes ? Fais le calcul, puis change-le.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f1e8; --card:#fffaf2; --ink:#2b2420; --muted:#7a6e64; --line:#e6dccd;
+    --accent:#c8553d; --accent-soft:#f1d3c7; --green:#4f7a5a; --dot-off:#e9dfd1;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  main{max-width:560px;margin:0 auto;padding:28px 18px 60px}
+  h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:2.1rem;line-height:1.1;margin:0 0 8px}
+  .lead{color:var(--muted);margin:0 0 26px;line-height:1.5}
+  section.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+  .label{font-size:.78rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 13px;font:inherit;font-size:.92rem;color:var(--ink);cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .field label{display:block;font-size:.85rem;color:var(--muted);margin-bottom:5px}
+  input[type=number],input[type=text],select{width:100%;font:inherit;font-size:1rem;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+  .sep{height:1px;background:var(--line);margin:16px 0}
+  .hidden{display:none!important}
+  /* Résultat */
+  #result{text-align:center;padding:26px 18px}
+  .big{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:4.6rem;line-height:1;color:var(--accent);margin:4px 0}
+  .sentence{font-family:Fraunces,Georgia,serif;font-size:1.35rem;line-height:1.3;margin:6px 0 4px}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 16px}
+  #dots{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:14px auto 6px;max-width:460px}
+  #dots i{width:10px;height:10px;border-radius:50%;background:var(--accent);display:block}
+  #dots i.extra{background:var(--green)}
+  .legend{font-size:.8rem;color:var(--muted)}
+  /* Et si */
+  .whatif h3{font-family:Fraunces,Georgia,serif;font-size:1.2rem;margin:0 0 4px}
+  input[type=range]{width:100%;accent-color:var(--green);margin:12px 0 4px}
+  .whatif .val{font-weight:600}
+  .gain{font-family:Fraunces,Georgia,serif;font-size:1.5rem;color:var(--green);margin-top:6px}
+  /* Actions */
+  .actions{display:grid;gap:10px}
+  .btn{display:block;text-align:center;text-decoration:none;font:inherit;font-weight:600;font-size:1rem;padding:14px;border-radius:14px;border:none;cursor:pointer}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .note{font-size:.8rem;color:var(--muted);line-height:1.5;margin-top:22px}
+  /* Modal partage */
+  #modal{position:fixed;inset:0;background:rgba(30,24,20,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+  #modal .box{background:var(--card);border-radius:18px;max-width:420px;width:100%;padding:16px;max-height:92vh;overflow:auto}
+  #modal img{width:100%;border-radius:12px;display:block;border:1px solid var(--line)}
+  #modal p{font-size:.85rem;color:var(--muted);text-align:center;margin:10px 0}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:20}
+</style>
+</head>
+<body>
+<main>
+  <h1>Encore combien de fois&nbsp;?</h1>
+  <p class="lead">Combien de dîners avec ta mère, d'étés avec tes enfants, de week-ends avec ton meilleur ami&nbsp;? Fais le calcul… puis change-le.</p>
+
+  <section class="card">
+    <p class="label">Avec qui&nbsp;?</p>
+    <div class="chips" id="who"></div>
+
+    <div class="row">
+      <div class="field" id="nameField">
+        <label for="name">Son prénom (facultatif)</label>
+        <input type="text" id="name" placeholder="Maman">
+      </div>
+      <div class="field" id="theirSexField">
+        <label for="theirSex">C'est</label>
+        <select id="theirSex"><option value="f">une femme</option><option value="m">un homme</option></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="myAge">Ton âge</label>
+        <input type="number" id="myAge" min="5" max="105" value="40" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="mySex">Tu es</label>
+        <select id="mySex"><option value="f">une femme</option><option value="m" selected>un homme</option></select>
+      </div>
+    </div>
+
+    <div class="row" id="theirAgeRow">
+      <div class="field">
+        <label for="theirAge" id="theirAgeLabel">Son âge</label>
+        <input type="number" id="theirAge" min="0" max="110" value="68" inputmode="numeric">
+      </div>
+      <div class="field" id="leaveField">
+        <label for="leaveAge">Quitte la maison à</label>
+        <input type="number" id="leaveAge" min="10" max="35" value="18" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <p class="label">Quoi&nbsp;?</p>
+    <div class="chips" id="what"></div>
+    <div class="field hidden" id="customField" style="margin-top:12px">
+      <label for="custom">Ton activité (au pluriel)</label>
+      <input type="text" id="custom" placeholder="parties de pétanque">
+    </div>
+
+    <div class="row">
+      <div class="field" id="freqField">
+        <label for="freq">Combien de fois</label>
+        <input type="number" id="freq" min="0.1" step="any" value="4" inputmode="decimal">
+      </div>
+      <div class="field hidden" id="freqSelField" style="grid-column:1 / -1">
+        <label for="freqSel">À quelle fréquence</label>
+        <select id="freqSel"><option value="1">Chaque année</option><option value="0.5">Un an sur deux</option><option value="0.3333">Un an sur trois</option><option value="0.25">Un an sur quatre</option></select>
+      </div>
+      <div class="field" id="unitField">
+        <label for="unit">Par</label>
+        <select id="unit"><option value="1">an</option><option value="12">mois</option><option value="52">semaine</option></select>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="result" aria-live="polite">
+    <p class="sub" id="pre">Il te reste environ</p>
+    <div class="big" id="big">–</div>
+    <p class="sentence" id="sentence"></p>
+    <p class="sub" id="years"></p>
+    <div id="dots" aria-hidden="true"></div>
+    <p class="legend" id="legend"></p>
+  </section>
+
+  <section class="card whatif" id="whatif">
+    <h3>Et si…</h3>
+    <p class="sub" style="margin:0" id="whatifQ"></p>
+    <p class="sub hidden" id="maxNote" style="margin:6px 0 0"></p>
+    <input type="range" id="slider" min="1" max="20" step="1" value="8">
+    <div class="gain" id="gain"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn primary" id="shareBtn">Lui envoyer</button>
+    <a class="btn ghost" id="proposeBtn" href="#" target="_blank" rel="noopener">Proposer une date maintenant</a>
+  </div>
+
+  <p class="note">
+    Estimation à partir des espérances de vie moyennes en France (INSEE, 2024-2025), selon l'âge et le sexe. Ce n'est pas une prédiction&nbsp;: c'est une moyenne, et surtout une invitation.<br><br>
+    Si la personne est malade ou si tu traverses un deuil, ce chiffre n'a pas de sens. Prends soin de toi.<br><br>
+    Rien n'est enregistré&nbsp;: le calcul se fait sur ton téléphone. Inspiré de «&nbsp;The Tail End&nbsp;» de Tim Urban.
+  </p>
+</main>
+
+<div id="modal" class="hidden" role="dialog" aria-modal="true">
+  <div class="box">
+    <img id="cardImg" alt="Carte à partager">
+    <p>Appui long sur l'image pour l'enregistrer ou la partager.</p>
+    <div class="actions">
+      <a class="btn primary" id="waBtn" href="#" target="_blank" rel="noopener">Envoyer par WhatsApp</a>
+      <button class="btn ghost" id="copyBtn">Copier le message</button>
+      <button class="btn ghost" id="closeBtn">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Espérance de vie restante par âge (approximation des tables INSEE France, 2024-2025)
+const LE = {
+  f:[[0,85.8],[10,76.2],[20,66.3],[30,56.5],[40,46.7],[50,37.1],[60,27.9],[65,23.6],[70,19.4],[75,15.4],[80,11.6],[85,8.2],[90,5.5],[95,3.6],[100,2.4],[110,1.2]],
+  m:[[0,80.2],[10,70.6],[20,60.8],[30,51.2],[40,41.6],[50,32.4],[60,23.7],[65,19.8],[70,16.1],[75,12.6],[80,9.4],[85,6.6],[90,4.5],[95,3.0],[100,2.1],[110,1.1]]
+};
+function ex(age, sex){
+  const t = LE[sex]; age = Math.max(0, Math.min(110, age));
+  for(let i=0;i<t.length-1;i++){
+    const [a0,e0]=t[i],[a1,e1]=t[i+1];
+    if(age>=a0 && age<=a1) return e0 + (e1-e0)*(age-a0)/(a1-a0);
+  }
+  return 1;
+}
+
+const WHO = [
+  {k:'mere', label:'Maman', mode:'person', sex:'f', name:'Maman', age:68},
+  {k:'pere', label:'Papa', mode:'person', sex:'m', name:'Papa', age:70},
+  {k:'gm', label:'Grand-mère', mode:'person', sex:'f', name:'Mamie', age:88},
+  {k:'gp', label:'Grand-père', mode:'person', sex:'m', name:'Papi', age:88},
+  {k:'ami', label:'Un·e ami·e', mode:'person', sex:null, name:'', age:40},
+  {k:'fratrie', label:'Frère / sœur', mode:'person', sex:null, name:'', age:38},
+  {k:'enfant', label:'Mon enfant (à la maison)', mode:'child', sex:null, name:'', age:12},
+  {k:'moi', label:'Juste moi', mode:'me', sex:null, name:'', age:null},
+];
+const WHAT = {
+  person:[
+    {s:'dîner',p:'dîners',f:4,u:1,tog:true},
+    {s:'visite',p:'visites',f:6,u:1},
+    {s:'week-end',p:'week-ends',f:2,u:1,tog:true},
+    {s:'appel',p:'appels',f:1,u:52},
+    {s:'Noël',p:'Noëls',f:1,u:1,tog:true,max:1},
+    {s:'séjour de vacances',p:'séjours de vacances',f:1,u:1,tog:true},
+  ],
+  child:[
+    {s:'soirée à la maison',p:'soirées à la maison',f:5,u:52},
+    {s:'histoire du soir',p:'histoires du soir',f:4,u:52},
+    {s:'été de vacances',p:'étés de vacances',f:1,u:1,max:1},
+    {s:'week-end',p:'week-ends',f:3,u:12},
+  ],
+  me:[
+    {s:'été',p:'étés',f:1,u:1,max:1},
+    {s:'Noël',p:'Noëls',f:1,u:1,max:1},
+    {s:'voyage',p:'voyages',f:2,u:1},
+    {s:'livre',p:'livres',f:1,u:12},
+  ]
+};
+
+const $ = id => document.getElementById(id);
+let who = WHO[0], what = WHAT.person[0], custom = false, lastN = 0, extraFreq = null;
+
+function chip(text, pressed, onClick){
+  const b = document.createElement('button');
+  b.className='chip'; b.type='button'; b.textContent=text;
+  b.setAttribute('aria-pressed', pressed?'true':'false');
+  b.onclick = onClick; return b;
+}
+function renderWho(){
+  const c=$('who'); c.innerHTML='';
+  WHO.forEach(w=>c.appendChild(chip(w.label, w===who, ()=>{selectWho(w)})));
+}
+function renderWhat(){
+  const c=$('what'); c.innerHTML='';
+  WHAT[who.mode].forEach(w=>c.appendChild(chip(w.p.charAt(0).toUpperCase()+w.p.slice(1), !custom && w===what, ()=>{selectWhat(w)})));
+  c.appendChild(chip('Autre…', custom, ()=>{custom=true; $('customField').classList.remove('hidden'); renderWhat(); update();}));
+}
+function selectWho(w){
+  who=w; custom=false; $('customField').classList.add('hidden');
+  $('name').value = w.name; $('name').placeholder = w.name || 'Prénom';
+  if(w.sex) $('theirSex').value = w.sex;
+  if(w.age!=null) $('theirAge').value = w.age;
+  $('theirSexField').classList.toggle('hidden', !!w.sex || w.mode!=='person');
+  $('nameField').classList.toggle('hidden', w.mode==='me');
+  $('theirAgeRow').classList.toggle('hidden', w.mode==='me');
+  $('leaveField').classList.toggle('hidden', w.mode!=='child');
+  $('theirAgeLabel').textContent = w.mode==='child' ? 'Son âge' : 'Son âge';
+  renderWho(); selectWhat(WHAT[w.mode][0]);
+}
+function selectWhat(w){
+  what=w; custom=false; $('customField').classList.add('hidden');
+  $('freq').value = w.f; $('unit').value = String(w.u); $('freqSel').value='1';
+  extraFreq=null; renderWhat(); update();
+}
+
+function label(){ if(custom){ const t=$('custom').value.trim()||'fois'; return {s:t,p:t,tog:false}; } return what; }
+function round(n){ if(n>=2000) return Math.round(n/100)*100; if(n>=300) return Math.round(n/10)*10; return Math.max(0,Math.round(n)); }
+function fmt(n){ return n.toLocaleString('fr-FR'); }
+function freqTxt(f){ return f>=1?'Chaque année':f>=0.5?'Un an sur deux':f>=0.33?'Un an sur trois':'Un an sur quatre'; }
+function unitTxt(u){ return u==1?'an':u==12?'mois':'semaine'; }
+
+function yearsLeft(){
+  const myAge=+$('myAge').value||0, mySex=$('mySex').value;
+  const mine = ex(myAge, mySex);
+  if(who.mode==='me') return mine;
+  const theirAge=+$('theirAge').value||0;
+  if(who.mode==='child') return Math.max(0, Math.min((+$('leaveAge').value||18)-theirAge, mine));
+  return Math.min(mine, ex(theirAge, $('theirSex').value));
+}
+
+function texts(n){
+  const L=label(), nm=$('name').value.trim(), word = n>1?L.p:L.s;
+  const withTxt = nm ? ` avec ${nm}` : (who.mode==='person'?' ensemble':'');
+  if(who.mode==='me') return {pre:'Il te reste environ', sent:word, share:`Il me reste environ ${fmt(n)} ${word}.`};
+  if(who.mode==='child') return {pre:'Il te reste environ', sent:`${word}${nm?' avec '+nm:''}`, share:`Il nous reste environ ${fmt(n)} ${word} ensemble${nm?', '+nm:''}.`};
+  return {pre:'Il te reste environ', sent:`${word}${withTxt}`, share:`${nm?nm+', il':'Il'} nous reste environ ${fmt(n)} ${word} ensemble.`};
+}
+
+function update(){
+  const annual = !custom && !!what.max;
+  $('freqField').classList.toggle('hidden', annual); $('unitField').classList.toggle('hidden', annual);
+  $('freqSelField').classList.toggle('hidden', !annual);
+  const Y=yearsLeft(), u= annual?1:+$('unit').value, f= annual? +$('freqSel').value : (+$('freq').value||0);
+  const perYear=f*u, n=round(Y*perYear); lastN=n;
+  const t=texts(n);
+  $('pre').textContent=t.pre; $('big').textContent=fmt(n); $('sentence').textContent=t.sent;
+  $('years').textContent = who.mode==='child'
+    ? `Soit encore ${Y.toFixed(1).replace('.',',')} ans avant son départ, à ${f} par ${unitTxt(u)}.`
+    : `Sur environ ${Math.round(Y)} ans, ${annual? freqTxt(f).toLowerCase() : 'à '+f.toString().replace('.',',')+' par '+unitTxt(u)}.`;
+
+  // Et si
+  const L=label(), s=$('slider');
+  if(annual){
+    s.classList.add('hidden'); $('maxNote').classList.remove('hidden');
+    if(f>=1){
+      $('whatifQ').classList.add('hidden');
+      $('maxNote').textContent = "Une fois par an, c'est le maximum : ce chiffre ne peut pas augmenter. Chacun compte.";
+      $('gain').textContent=''; drawDots(n,0);
+    } else {
+      $('whatifQ').classList.remove('hidden');
+      $('whatifQ').innerHTML = `ça arrivait <span class="val">chaque année</span>&nbsp;?`;
+      const n2=round(Y*1); $('maxNote').textContent='';
+      $('gain').textContent = `${fmt(n2)} ${n2>1?L.p:L.s} : +${fmt(n2-n)}`;
+      drawDots(n, Math.max(0,n2-n));
+    }
+    $('proposeBtn').href = 'https://wa.me/?text='+encodeURIComponent(proposeText());
+    return;
+  }
+  s.classList.remove('hidden'); $('maxNote').classList.add('hidden'); $('whatifQ').classList.remove('hidden');
+  const max=Math.max(4, Math.ceil(f*4));
+  s.max=max; s.step = f<1? 0.5 : 1; s.min = f<1?0.5:1;
+  if(extraFreq===null) s.value = Math.min(max, Math.max(f*2, f+1));
+  const nf=+s.value, n2=round(Y*nf*u), gain=n2-n;
+  $('whatifQ').innerHTML = `tu passais à <span class="val">${nf.toString().replace('.',',')} par ${unitTxt(u)}</span>&nbsp;?`;
+  $('gain').textContent = gain>0 ? `${fmt(n2)} ${n2>1?L.p:L.s} : +${fmt(gain)}` : gain<0 ? `${fmt(n2)} ${n2>1?L.p:L.s} (${fmt(gain)})` : `${fmt(n2)}, pareil`;
+
+  drawDots(n, Math.max(0,gain));
+  $('proposeBtn').href = 'https://wa.me/?text='+encodeURIComponent(proposeText());
+}
+function proposeText(){
+  const nm=$('name').value.trim(), L=label();
+  const art = /^(soirée|histoire|visite)/.test(L.s) ? 'une' : 'un';
+  return `${nm?nm+', on':'On'} se cale ${custom?'ça':art+' '+L.s} bientôt ? Dis-moi tes dispos 🙂`;
+}
+
+function drawDots(n, extra){
+  const total=n+extra, MAX=500, per=Math.max(1, Math.ceil(total/MAX));
+  const a=Math.round(n/per), b=Math.round(extra/per);
+  const d=$('dots'); d.innerHTML='';
+  const frag=document.createDocumentFragment();
+  for(let i=0;i<a;i++){frag.appendChild(document.createElement('i'));}
+  for(let i=0;i<b;i++){const e=document.createElement('i');e.className='extra';frag.appendChild(e);}
+  d.appendChild(frag);
+  $('legend').textContent = (per>1?`1 point = ${per} fois. `:'') + (b>0?'En vert : ce que tu gagnerais.':'');
+}
+
+// Carte de partage
+function wrap(ctx, text, x, y, maxW, lh){
+  const words=text.split(' '); let line='', lines=[];
+  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW && line){lines.push(line); line=w;} else line=t; }
+  lines.push(line); lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lh)); return lines.length*lh;
+}
+async function makeCard(){
+  await document.fonts.ready;
+  const W=1080,H=1350,c=document.createElement('canvas'); c.width=W;c.height=H; const x=c.getContext('2d');
+  x.fillStyle='#f7f1e8'; x.fillRect(0,0,W,H);
+  x.textAlign='center'; x.fillStyle='#7a6e64'; x.font='600 34px Inter, sans-serif';
+  x.fillText('ENCORE COMBIEN DE FOIS ?', W/2, 130);
+  const n=lastN, L=label(), nm=$('name').value.trim(), word=n>1?L.p:L.s;
+  x.fillStyle='#2b2420'; x.font='400 52px Fraunces, Georgia, serif';
+  const top = who.mode==='me' ? 'Il me reste environ' : (nm? `${nm}, il nous reste environ` : 'Il nous reste environ');
+  wrap(x, top, W/2, 260, 900, 64);
+  x.fillStyle='#c8553d'; x.font='700 230px Fraunces, Georgia, serif'; x.fillText(fmt(n), W/2, 520);
+  x.fillStyle='#2b2420'; x.font='600 60px Fraunces, Georgia, serif';
+  wrap(x, word + (who.mode==='me'?'.':' ensemble.'), W/2, 620, 900, 72);
+  // points
+  const per=Math.max(1,Math.ceil(n/360)), cnt=Math.round(n/per), cols=24, r=11, gap=34;
+  const rows=Math.ceil(cnt/cols), gw=(cols-1)*gap, sx=(W-gw)/2;
+  const areaTop=720, areaBot=H-170, gh=(rows-1)*gap, sy=Math.max(areaTop, areaTop+((areaBot-areaTop)-gh)/2);
+  x.fillStyle='#c8553d';
+  for(let i=0;i<cnt;i++){ const cx=sx+(i%cols)*gap, cy=sy+Math.floor(i/cols)*gap; if(cy>H-170) break; x.beginPath(); x.arc(cx,cy,r,0,Math.PI*2); x.fill(); }
+  x.fillStyle='#7a6e64'; x.font='400 32px Inter, sans-serif';
+  x.fillText('Et toi, il t\'en reste combien ?', W/2, H-90);
+  return c;
+}
+async function share(){
+  const c=await makeCard(), t=texts(lastN).share+' Et toi, il t\'en reste combien ?';
+  try{
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    const file=new File([blob],'encore-combien-de-fois.png',{type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], text:t}); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  $('cardImg').src=c.toDataURL('image/png');
+  $('waBtn').href='https://wa.me/?text='+encodeURIComponent(t);
+  $('copyBtn').onclick=async()=>{ try{ await navigator.clipboard.writeText(t); toast('Message copié'); }catch(e){ toast('Copie impossible ici'); } };
+  $('modal').classList.remove('hidden');
+}
+function toast(m){ const d=document.createElement('div'); d.className='toast'; d.textContent=m; document.body.appendChild(d); setTimeout(()=>d.remove(),1800); }
+
+['myAge','mySex','theirAge','theirSex','leaveAge','freq','freqSel','unit','name','custom'].forEach(id=>$(id).addEventListener('input',()=>{extraFreq=null;update();}));
+$('slider').addEventListener('input',()=>{extraFreq=+$('slider').value;update();});
+$('shareBtn').onclick=share;
+$('closeBtn').onclick=()=>$('modal').classList.add('hidden');
+$('modal').addEventListener('click',e=>{ if(e.target.id==='modal') $('modal').classList.add('hidden'); });
+selectWho(WHO[0]);
+</script>
+</body>
+</html>
